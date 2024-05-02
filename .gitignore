@@ -1,0 +1,12 @@
+﻿node_modules/
+.next/
+.env.local
+.DS_Store
+*.log
+.vercel
+.convex/
+dist/
+build/
+.cache/
+test-run.ps1
+*.ps1
