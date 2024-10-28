@@ -1,0 +1,1387 @@
+================================================================================
+                    ONE NOTEBOOK - PROJECT DOCUMENTATION
+          COMPREHENSIVE INTERVIEW QUESTIONS & TECHNICAL DEEP DIVE
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+Project Name: One Notebook
+Type: Full-Stack Document Management Application (Notion Clone)
+Tech Stack: Next.js 14, React, Convex (Backend), Clerk (Auth), EdgeStore (File Storage)
+
+DESCRIPTION:
+One Notebook is a sophisticated document management system that allows users to
+create, organize, and publish documents with infinite nested child documents.
+Features include customizable icons, cover images, real-time updates, soft delete
+functionality, and the ability to publish documents to the web.
+
+KEY FEATURES:
+✓ Infinite nested document hierarchy
+✓ Real-time collaborative updates
+✓ Rich text editor with image uploads
+✓ Soft delete with trash can functionality
+✓ Publish documents to web (public URLs)
+✓ Customizable icons and cover images
+✓ Dark/Light theme support
+✓ Keyboard shortcuts (Cmd+K search)
+✓ Mobile responsive design
+✓ Collapsible sidebar navigation
+✓ User authentication with OAuth
+✓ File upload and management
+
+================================================================================
+                        CORE TECHNOLOGIES USED & WHY
+================================================================================
+
+1. NEXT.JS 14 (App Router)
+   - Why? Server-side rendering, file-based routing, API routes, optimized performance
+   - App directory structure for modern React patterns
+   - Server and client components separation
+   - Automatic code splitting and lazy loading
+   - Built-in image optimization
+   - API routes for serverless functions
+   - SEO-friendly with metadata API
+
+2. CONVEX (Backend as a Service)
+   - Why? Real-time database with built-in subscriptions, serverless functions
+   - Type-safe database queries with TypeScript
+   - Automatic real-time updates without WebSockets configuration
+   - No server management required
+   - Built-in authentication integration
+   - Optimistic updates handled automatically
+   - Serverless architecture with automatic scaling
+
+3. CLERK (Authentication)
+   - Why? Complete authentication solution with OAuth providers
+   - User management, session handling, and security out-of-the-box
+   - Easy integration with React/Next.js
+   - Social logins (Google, GitHub, etc.)
+   - Session management and JWT tokens
+   - User profile management
+   - Webhooks for user events
+
+4. EDGESTORE (File Storage)
+   - Why? Serverless file storage optimized for edge networks
+   - Fast CDN delivery for images and files
+   - Simple API for upload/delete operations
+   - Global distribution for low latency
+   - Automatic image optimization
+   - Secure file access
+
+5. BLOCKNOTE (Rich Text Editor)
+   - Why? Modern block-based editor like Notion
+   - Markdown support, extensible, and customizable
+   - Built-in image upload capabilities
+   - Slash commands for quick formatting
+   - Drag and drop blocks
+   - JSON-based content structure
+   - Theme support (dark/light)
+
+6. TAILWIND CSS
+   - Why? Utility-first CSS framework for rapid UI development
+   - Consistent design system, responsive by default
+   - Dark mode support built-in
+   - Small bundle size (purges unused CSS)
+   - No naming conflicts
+   - Easy customization via config
+
+7. SHADCN/UI & RADIX UI
+   - Why? Accessible, customizable component library
+   - Headless UI components with full control over styling
+   - Built on Radix primitives for accessibility
+   - Copy-paste components (not npm package)
+   - WAI-ARIA compliant
+   - Keyboard navigation support
+
+8. ZUSTAND (State Management)
+   - Why? Lightweight state management, simpler than Redux
+   - Used for modal state management (cover image, settings)
+   - No boilerplate, easy to use
+   - No context providers needed
+   - TypeScript support
+   - DevTools integration
+
+9. NEXT-THEMES (Theme Management)
+   - Why? Simple dark/light mode implementation
+   - System theme detection
+   - No flash of unstyled content
+   - localStorage persistence
+   - Works with Tailwind dark mode
+
+10. SONNER (Toast Notifications)
+    - Why? Beautiful toast notifications
+    - Promise-based API
+    - Stacking and queuing
+    - Customizable styling
+    - Works with promises for async operations
+
+11. LUCIDE-REACT (Icons)
+    - Why? Lightweight, customizable icon library
+    - Tree-shakeable (only imports used icons)
+    - Consistent design
+    - TypeScript support
+    - Easy to style with Tailwind
+
+12. REACT-DROPZONE (File Upload)
+    - Why? Drag and drop file uploads
+    - Multiple file support
+    - File type validation
+    - Size validation
+    - Accessible
+
+================================================================================
+                    100+ INTERVIEW QUESTIONS & ANSWERS
+================================================================================
+
+ARCHITECTURE & DESIGN QUESTIONS
+--------------------------------------------------------------------------------
+
+Q1: Explain the overall architecture of the One Notebook application.
+A: The application follows a modern full-stack architecture:
+   - Frontend: Next.js 14 with App Router (React Server Components + Client Components)
+   - Backend: Convex (serverless backend with real-time database)
+   - Authentication: Clerk (third-party auth service)
+   - File Storage: EdgeStore (CDN-based file storage)
+   - The architecture is serverless, scalable, and uses edge computing for performance
+
+Q2: Why did you choose Next.js 14 with App Router over Pages Router?
+A: App Router provides:
+   - Better server component support for improved performance
+   - Nested layouts and loading states
+   - Streaming and Suspense support out of the box
+   - More intuitive file-based routing with route groups
+   - Better TypeScript integration
+
+Q3: What is the folder structure and what do the parentheses mean in route names?
+A: The parentheses create "route groups" that don't affect the URL:
+   - (root) - Landing page for unauthenticated users
+   - (main) - Main application for authenticated users
+   - (public) - Public preview pages for published documents
+   This allows logical grouping without affecting URLs.
+
+Q4: Why use Convex instead of traditional REST APIs or GraphQL?
+A: Convex provides:
+   - Real-time subscriptions automatically (useQuery hook)
+   - Type-safe database operations with TypeScript
+   - No need to manage WebSocket connections
+   - Built-in authentication integration
+   - Serverless architecture with automatic scaling
+   - Developer-friendly with no server management
+
+Q5: Explain the data model and schema design.
+A: The documents table contains:
+   - title: Document name
+   - userId: Owner of the document
+   - parentDocument: Optional reference to parent (enables nesting)
+   - isArchived: Soft delete flag
+   - isPublished: Public visibility flag
+   - content: Rich text content (JSON string)
+   - coverImage: URL to cover image
+   - icon: Emoji icon
+   Indexes: by_user, by_user_parent for efficient queries
+
+================================================================================
+AUTHENTICATION & AUTHORIZATION
+--------------------------------------------------------------------------------
+
+Q6: How does authentication work in this application?
+A: Using Clerk:
+   - Clerk provides sign-in/sign-up UI components
+   - JWT tokens stored in cookies automatically
+   - useConvexAuth hook checks authentication state
+   - Convex backend validates auth tokens via ctx.auth.getUserIdentity()
+   - userId (subject) is extracted and used for data isolation
+
+Q7: How do you ensure users can only access their own documents?
+A: Multiple security layers:
+   - Backend mutations/queries check identity.subject === document.userId
+   - All database queries filter by userId
+   - Convex throws "Unauthorized" errors if userId doesn't match
+   - Published documents have special access rules (readable by anyone if isPublished=true)
+
+Q8: What happens when a user is not authenticated?
+A: - Frontend shows landing page with sign-in prompts
+   - Protected routes redirect to authentication
+   - Backend queries throw "Not authenticated" errors
+   - useConvexAuth provides isLoading and isAuthenticated states
+
+================================================================================
+DATABASE & REAL-TIME UPDATES
+--------------------------------------------------------------------------------
+
+Q9: How does the real-time update mechanism work?
+A: - Convex useQuery hook subscribes to database changes
+   - When data changes, all subscribed components re-render automatically
+   - No manual WebSocket setup or polling required
+   - Example: When a document title changes, sidebar updates instantly
+
+Q10: Explain the indexing strategy and why it matters.
+A: Two indexes:
+   - by_user: [userId] - Fast queries for all user's documents
+   - by_user_parent: [userId, parentDocument] - Fast hierarchical queries
+   Benefits: O(log n) query time instead of O(n), critical for large datasets
+
+Q11: How do you handle nested documents (parent-child relationships)?
+A: - parentDocument field stores optional reference to parent document ID
+   - Recursive queries fetch children using by_user_parent index
+   - DocumentList component recursively renders children
+   - Archive/restore operations use recursive functions to handle entire trees
+
+Q12: Explain the archive (soft delete) vs hard delete strategy.
+A: Soft Delete (Archive):
+   - Sets isArchived=true, document still in database
+   - Users can restore from trash
+   - Recursive: archives all child documents too
+   Hard Delete (Remove):
+   - Permanently deletes from database using ctx.db.delete()
+   - Cannot be recovered
+   - Only available from trash
+
+================================================================================
+FRONTEND ARCHITECTURE
+--------------------------------------------------------------------------------
+
+Q13: What is the difference between Server Components and Client Components?
+A: Server Components:
+   - Render on server, sent as HTML to client
+   - No JavaScript sent to browser for that component
+   - Can directly access backend data
+   - No useState, useEffect, or browser APIs
+   Client Components:
+   - Marked with "use client"
+   - Interactive, can use hooks and event handlers
+   - JavaScript bundled and sent to browser
+   - Required for interactivity (buttons, forms, modals)
+
+Q14: Why use both Server and Client Components?
+A: - Server Components reduce JavaScript bundle size
+   - Client Components only where interactivity is needed
+   - Layouts and static content use Server Components
+   - Forms, editors, and interactive elements use Client Components
+   - Optimal performance: less JS = faster page loads
+
+Q15: How does the sidebar navigation work with nested documents?
+A: - DocumentList is a recursive component
+   - Fetches documents at current level via useQuery
+   - Each document can expand to show children
+   - State management: expanded object tracks which nodes are open
+   - Level prop increases with nesting depth for indentation
+
+Q16: Explain the modal management strategy using Zustand.
+A: - Custom hooks: useCoverImage, useSettings
+   - Zustand store holds modal state (isOpen)
+   - onOpen/onClose methods toggle state
+   - ModalProvider renders all modals, controlled by Zustand state
+   - Benefits: Global state, no prop drilling, simple API
+
+Q17: How does the rich text editor handle content?
+A: - BlockNote editor stores content as JSON (structured blocks)
+   - Content saved as stringified JSON in database
+   - On load: JSON.parse() to restore editor state
+   - handleUpload function integrates with EdgeStore for images
+   - onChange callback updates database in real-time
+
+================================================================================
+FILE MANAGEMENT & UPLOADS
+--------------------------------------------------------------------------------
+
+Q18: How do file uploads work with EdgeStore?
+A: - User selects file (image) via dropzone or input
+   - File sent to EdgeStore via edgestore.publicFiles.upload()
+   - EdgeStore returns CDN URL
+   - URL stored in database (coverImage field)
+   - Image served from CDN (fast, global distribution)
+
+Q19: What happens when a user deletes a cover image?
+A: - Frontend calls removeCoverImage mutation
+   - Backend sets coverImage field to undefined
+   - EdgeStore file still exists (manual cleanup needed or automatic TTL)
+   - UI updates to show no cover
+
+Q20: How do you handle image uploads within the editor?
+A: - BlockNote editor has uploadFile prop
+   - handleUpload function receives file, uploads to EdgeStore
+   - Returns URL which BlockNote inserts into content
+   - Images embedded as blocks in the document
+
+================================================================================
+STATE MANAGEMENT & DATA FLOW
+--------------------------------------------------------------------------------
+
+Q21: Describe the data flow when creating a new document.
+A: 1. User clicks "New Document" button
+   2. Client calls create mutation with title and parentDocument
+   3. Convex validates authentication
+   4. Document inserted into database
+   5. useQuery subscriptions trigger, sidebar updates
+   6. Router navigates to new document page
+   7. Document loads with empty content
+
+Q22: How does the search functionality work?
+A: - Search modal triggered by Cmd+K (keyboard shortcut)
+   - getSearch query fetches all non-archived documents for user
+   - Client-side filtering as user types (cmdk library)
+   - Results sorted by relevance
+   - Click result navigates to document
+
+Q23: Explain the publish/unpublish workflow.
+A: - User toggles "Publish" in settings
+   - update mutation sets isPublished=true/false
+   - Published documents accessible via /preview/[documentId] route
+   - getById query allows access if isPublished=true (even without auth)
+   - Unpublished documents require authentication
+
+Q24: How do you handle optimistic updates?
+A: - Convex handles this automatically with useQuery
+   - Mutations are fast (serverless)
+   - UI updates immediately when mutation completes
+   - No manual optimistic update code needed (benefit of Convex)
+
+================================================================================
+PERFORMANCE & OPTIMIZATION
+--------------------------------------------------------------------------------
+
+Q25: What performance optimizations are implemented?
+A: - Server Components reduce JS bundle size
+   - Next.js automatic code splitting
+   - Image optimization via Next.js Image component
+   - EdgeStore CDN for fast image loading
+   - Lazy loading of editor (dynamic import)
+   - Database indexes for fast queries
+   - Memoization where needed (React.memo, useMemo)
+
+Q26: How do you prevent unnecessary re-renders?
+A: - React.memo for expensive components
+   - Proper key props in lists
+   - Zustand for modal state (avoids prop drilling)
+   - useCallback for event handlers
+   - Server Components where possible (no re-renders)
+
+Q27: How is the application optimized for mobile?
+A: - Tailwind responsive utilities (md:, sm:, etc.)
+   - Collapsible sidebar for mobile
+   - Touch-friendly UI components
+   - Mobile-first design approach
+   - Responsive navigation
+
+================================================================================
+ERROR HANDLING & EDGE CASES
+--------------------------------------------------------------------------------
+
+Q28: How do you handle errors in Convex mutations?
+A: - Try-catch in frontend with toast notifications (sonner)
+   - Convex throws descriptive errors ("Not authenticated", "Unauthorized")
+   - Frontend catches and displays user-friendly messages
+   - Authentication errors redirect to sign-in
+
+Q29: What happens if a parent document is archived?
+A: - recursiveArchive function archives all children
+   - Maintains data integrity
+   - On restore, if parent still archived, child becomes root document
+   - Prevents orphaned documents
+
+Q30: How do you handle race conditions in real-time updates?
+A: - Convex handles consistency automatically
+   - Mutations are atomic
+   - useQuery subscriptions always reflect latest state
+   - No manual conflict resolution needed
+
+================================================================================
+DEPLOYMENT & SCALABILITY
+--------------------------------------------------------------------------------
+
+Q31: How would you deploy this application to production?
+A: - Next.js: Deploy to Vercel (built by Next.js team, optimal)
+   - Convex: Already hosted (serverless, auto-scales)
+   - EdgeStore: Already hosted (CDN, global)
+   - Clerk: Already hosted (auth service)
+   - Environment variables in Vercel dashboard
+   - Automatic HTTPS, edge deployment
+
+Q32: How does the application scale?
+A: - Serverless architecture (Convex, EdgeStore, Clerk all scale automatically)
+   - No database servers to manage
+   - CDN for static assets and images
+   - Edge functions for auth
+   - Horizontal scaling built-in
+
+Q33: What monitoring and logging would you implement?
+A: - Convex dashboard for database queries and errors
+   - Vercel Analytics for page performance
+   - Clerk dashboard for auth metrics
+   - Error tracking: Sentry or similar
+   - Custom logging for critical mutations
+
+================================================================================
+SECURITY CONSIDERATIONS
+--------------------------------------------------------------------------------
+
+Q34: What security measures are in place?
+A: - Authentication required for all mutations
+   - UserId validation on every database operation
+   - Environment variables for secrets
+   - HTTPS enforced
+   - XSS protection via React (escaped by default)
+   - CSRF protection via Next.js
+   - Content Security Policy headers
+
+Q35: How do you protect against unauthorized access?
+A: - Backend checks: identity.subject === document.userId
+   - Database indexes prevent full table scans
+   - Published documents have controlled access
+   - Clerk manages session security
+   - JWT tokens validated on every request
+
+================================================================================
+TESTING & QUALITY ASSURANCE
+--------------------------------------------------------------------------------
+
+Q36: What testing strategy would you implement?
+A: - Unit tests: Vitest or Jest for utility functions
+   - Integration tests: React Testing Library for components
+   - E2E tests: Playwright or Cypress for critical flows
+   - Type safety: TypeScript for compile-time checks
+   - Convex: Test mutations/queries in isolation
+
+Q37: How do you ensure type safety across the stack?
+A: - TypeScript in frontend and Convex backend
+   - Convex auto-generates types from schema
+   - Type-safe API calls with generated types
+   - Zod for runtime validation where needed
+   - No any types allowed (strict mode)
+
+================================================================================
+ADVANCED FEATURES & IMPROVEMENTS
+--------------------------------------------------------------------------------
+
+Q38: How would you implement collaborative editing?
+A: - Convex supports real-time updates (already have this)
+   - Add presence tracking (who's viewing/editing)
+   - Operational Transformation or CRDTs for conflict resolution
+   - Show cursors and selections of other users
+   - Lock mechanism for simultaneous edits
+
+Q39: What features would you add next?
+A: - Version history and rollback
+   - Comments and mentions (@user)
+   - Templates for common document types
+   - Advanced search (full-text, tags)
+   - Export to PDF, Markdown, HTML
+   - Integrations (Google Drive, Slack)
+   - Workspaces and team collaboration
+
+Q40: How would you improve performance further?
+A: - Implement virtual scrolling for large document lists
+   - Pagination for search results
+   - Service workers for offline support
+   - Incremental Static Regeneration for public pages
+   - Database query optimization (already have indexes)
+   - Image lazy loading and progressive loading
+
+================================================================================
+REACT & HOOKS DEEP DIVE
+--------------------------------------------------------------------------------
+
+Q41: Explain how the useScrollTop custom hook works.
+A: - useState tracks scrolled state (boolean)
+   - useEffect adds scroll event listener to window
+   - Compares window.scrollY to threshold (default 10px)
+   - Updates state when crossing threshold
+   - Cleanup function removes listener on unmount
+   - Used for showing/hiding navbar on scroll
+
+Q42: Why use custom hooks like useScrollTop, useSearch, useCoverImage?
+A: - Encapsulate reusable logic
+   - Separate concerns (logic vs UI)
+   - Easy to test in isolation
+   - Can be shared across components
+   - Makes components cleaner and more readable
+
+Q43: How does the SearchCommand component handle keyboard shortcuts?
+A: - useEffect adds keydown event listener
+   - Checks for Cmd+K (Mac) or Ctrl+K (Windows)
+   - e.preventDefault() stops default browser behavior
+   - toggle() function opens/closes search modal
+   - Cleanup removes listener on unmount
+
+Q44: Explain the isMounted pattern in SearchCommand.
+A: - State starts as false
+   - useEffect sets it to true after mount
+   - Prevents hydration mismatches (server vs client)
+   - Returns null if not mounted
+   - Common pattern for client-only components
+
+Q45: How do you handle the trash box filtering?
+A: - useState tracks search input
+   - documents.filter() on title (case-insensitive)
+   - Real-time filtering as user types
+   - Shows "No documents found" when empty
+   - Efficient: filtering happens on client
+
+Q46: Explain event.stopPropagation() usage in trash box.
+A: - Prevents event bubbling to parent elements
+   - Used on restore/delete buttons
+   - Parent has onClick to navigate
+   - stopPropagation prevents navigation when clicking restore/delete
+   - Critical for nested clickable elements
+
+Q47: How does the Toolbar component handle inline editing?
+A: - useState tracks isEditing and value
+   - Double-click or click enables editing
+   - TextareaAutosize for dynamic height
+   - onBlur disables editing
+   - Enter key also disables editing
+   - Real-time updates via useMutation
+
+Q48: What is TextareaAutosize and why use it?
+A: - React component that auto-grows with content
+   - No scrollbars, expands vertically
+   - Better UX for titles that span multiple lines
+   - Maintains proper sizing
+   - Works with controlled components
+
+================================================================================
+UI/UX & DESIGN PATTERNS
+--------------------------------------------------------------------------------
+
+Q49: How does dark mode work in this application?
+A: - next-themes provider wraps app
+   - useTheme() hook gets current theme
+   - Tailwind dark: classes for dark styles
+   - System theme detection automatic
+   - localStorage persists user preference
+   - suppressHydrationWarning prevents flash
+
+Q50: Explain the skeleton loading states.
+A: - Component.Skeleton pattern for loading UI
+   - Shows while useQuery is undefined
+   - Prevents layout shift
+   - Better UX than spinners for small components
+   - Matches actual component structure
+
+Q51: How do you handle responsive design?
+A: - Tailwind breakpoint classes (sm:, md:, lg:)
+   - Mobile-first approach
+   - Sidebar collapses on mobile
+   - Touch-friendly hit targets
+   - Responsive typography and spacing
+
+Q52: Explain the confirm modal pattern.
+A: - AlertDialog from Radix UI
+   - Children as trigger (composition pattern)
+   - onConfirm callback for delete action
+   - stopPropagation on all interactions
+   - Prevents accidental deletes
+
+Q53: How does the banner notification work for archived documents?
+A: - Conditional rendering in Navbar
+   - Shows when document.isArchived is true
+   - Provides restore functionality
+   - Positioned above document content
+   - Real-time updates when archived
+
+Q54: Explain the IconPicker component design.
+A: - Popover component for dropdown
+   - emoji-picker-react library
+   - onChange callback with selected icon
+   - Can wrap button (asChild pattern)
+   - Theme-aware (dark/light mode)
+
+Q55: How do you handle the collapsible sidebar?
+A: - State tracks collapsed/expanded
+   - CSS transitions for smooth animation
+   - Resize handle for manual adjustment
+   - Mobile auto-collapses
+   - Persists state in localStorage (implied)
+
+Q56: Explain the navigation component structure.
+A: - Persistent sidebar with document tree
+   - SearchCommand for quick navigation
+   - User profile at bottom
+   - Settings and theme toggle
+   - Trash can access
+
+================================================================================
+CONVEX BACKEND DEEP DIVE
+--------------------------------------------------------------------------------
+
+Q57: What is the difference between mutation and query in Convex?
+A: Queries:
+   - Read-only operations
+   - Cached and subscribed to
+   - Re-run automatically on data changes
+   - Cannot modify database
+   Mutations:
+   - Write operations
+   - Can insert, update, delete
+   - Not cached
+   - Return values to client
+
+Q58: Explain the recursiveArchive function logic.
+A: - Takes documentId as parameter
+   - Queries all children with by_user_parent index
+   - Iterates through each child
+   - Patches child to set isArchived=true
+   - Recursively calls itself for each child
+   - Ensures entire document tree is archived
+
+Q59: How does the restore function handle orphaned documents?
+A: - Checks if parent document exists
+   - If parent is archived, sets parentDocument to undefined
+   - Makes orphaned document a root document
+   - Prevents inaccessible nested documents
+   - Maintains data integrity
+
+Q60: Why use v.optional() for certain schema fields?
+A: - Fields like parentDocument can be null/undefined
+   - Root documents have no parent
+   - content, icon, coverImage may not exist initially
+   - Optional makes TypeScript types accurate
+   - Prevents validation errors
+
+Q61: Explain the by_user_parent compound index.
+A: - Index on [userId, parentDocument]
+   - Allows fast queries for specific user's children
+   - Critical for hierarchical queries
+   - Single index serves multiple query patterns
+   - Much faster than filtering without index
+
+Q62: How does Convex handle authentication in functions?
+A: - ctx.auth.getUserIdentity() returns user object
+   - Returns null if not authenticated
+   - Subject field contains userId
+   - JWT validated automatically
+   - No manual token parsing needed
+
+Q63: What happens if a mutation fails?
+A: - Convex throws error
+   - Transaction rolls back (atomic)
+   - Frontend receives error
+   - useQuery data remains unchanged
+   - Toast notification shows error message
+
+Q64: Explain the update mutation's rest parameter pattern.
+A: - Destructures id from args
+   - ...rest captures remaining fields
+   - Flexible: can update any combination of fields
+   - Type-safe: TypeScript validates fields
+   - Clean code: no need to specify each field
+
+================================================================================
+NEXT.JS ROUTING & LAYOUTS
+--------------------------------------------------------------------------------
+
+Q65: How does the [documentId] dynamic route work?
+A: - Square brackets denote dynamic segment
+   - Accessible via useParams() hook
+   - Matches any document ID in URL
+   - /documents/abc123 → params.documentId = "abc123"
+   - Type-safe with TypeScript
+
+Q66: Explain the purpose of each layout file.
+A: - app/layout.js: Root layout, wraps entire app
+   - (main)/layout.jsx: Authenticated users, includes sidebar
+   - (public)/layout.jsx: Public pages, minimal UI
+   - (root)/layout.jsx: Landing page layout
+   - Layouts persist across route changes
+
+Q67: How does the MainLayout protect authenticated routes?
+A: - useConvexAuth checks isAuthenticated
+   - Shows spinner while isLoading
+   - Redirects to "/" if not authenticated
+   - Uses Next.js redirect() function
+   - Runs on every render
+
+Q68: What is the purpose of route groups (parentheses)?
+A: - Organize routes logically
+   - Don't add to URL path
+   - Can have different layouts
+   - Example: (main) and (public) both at /documents level
+   - Keeps codebase organized
+
+Q69: How do you handle 404 errors?
+A: - not-found.jsx file for custom 404 page
+   - getById returns null for non-existent documents
+   - Component handles null case
+   - Shows appropriate error message
+
+Q70: Explain metadata API usage in root layout.
+A: - export const metadata object
+   - Sets title, description, keywords
+   - OpenGraph for social sharing
+   - metadataBase for absolute URLs
+   - SEO optimization
+
+================================================================================
+TYPESCRIPT & TYPE SAFETY
+--------------------------------------------------------------------------------
+
+Q71: How does Convex generate TypeScript types?
+A: - convex/_generated folder auto-created
+   - Types derived from schema.ts
+   - api.d.ts exports all queries/mutations
+   - dataModel.d.ts for database types
+   - Regenerated on schema changes
+
+Q72: What TypeScript features are used in the codebase?
+A: - Interface definitions for component props
+   - Generic types for ID<"documents">
+   - Optional properties with ?
+   - Type inference from hooks
+   - Strict null checks
+
+Q73: How do you ensure type safety in mutations?
+A: - v.string(), v.boolean(), v.optional() validators
+   - Convex validates at runtime
+   - TypeScript validates at compile time
+   - Generated types ensure correct usage
+   - No any types
+
+Q74: Explain the Id<"documents"> type.
+A: - Branded type for document IDs
+   - Prevents mixing different ID types
+   - Type-safe database references
+   - Generated by Convex
+   - Example: Id<"documents"> vs Id<"users">
+
+================================================================================
+STYLING & CSS
+--------------------------------------------------------------------------------
+
+Q75: How do you handle dynamic classNames?
+A: - cn() utility function (clsx + tailwind-merge)
+   - Merges Tailwind classes intelligently
+   - Handles conditional classes
+   - Resolves conflicts (latest wins)
+   - Example: cn("base-class", condition && "conditional-class")
+
+Q76: Explain the dark mode implementation.
+A: - Tailwind dark: prefix for dark styles
+   - next-themes handles theme switching
+   - CSS variables for colors
+   - No flash on page load
+   - System preference detection
+
+Q77: How do you create custom color schemes?
+A: - tailwind.config.js extends theme
+   - CSS variables in globals.css
+   - Separate light and dark values
+   - HSL color format for easy adjustment
+   - Consistent across app
+
+Q78: What is the purpose of globals.css?
+A: - Global styles and resets
+   - CSS variables for theming
+   - Base typography
+   - Scrollbar customization
+   - Dark mode variables
+
+================================================================================
+STATE MANAGEMENT PATTERNS
+--------------------------------------------------------------------------------
+
+Q79: When do you use Zustand vs React state?
+A: Zustand:
+   - Global state (modals)
+   - Accessed by multiple components
+   - No parent-child relationship
+   React useState:
+   - Local component state
+   - Temporary UI state
+   - Not shared
+
+Q80: How does the useCoverImage hook work?
+A: - Zustand store with isOpen state
+   - onOpen() and onClose() methods
+   - onReplace() for changing images
+   - Accessed anywhere in app
+   - No prop drilling
+
+Q81: Explain the expanded state in DocumentList.
+A: - Object with documentId as keys
+   - Boolean values for expanded/collapsed
+   - Toggles specific document
+   - Preserved during re-renders
+   - Local to component (not global)
+
+================================================================================
+PERFORMANCE QUESTIONS
+--------------------------------------------------------------------------------
+
+Q82: How do you minimize re-renders in DocumentList?
+A: - Memoize onExpand callback
+   - Key prop on mapped items
+   - Conditional rendering of children
+   - React.memo on Item component (implied)
+
+Q83: What causes the editor to re-render?
+A: - onChange callback fires on content change
+   - initialData prop changes
+   - Theme changes (dark/light)
+   - editable prop changes
+
+Q84: How do you handle large document lists?
+A: - Recursive loading (only visible children)
+   - Collapsed nodes don't render children
+   - Database indexes for fast queries
+   - Could add virtual scrolling for hundreds of items
+
+Q85: Explain code splitting in this app.
+A: - Next.js automatic route-based splitting
+   - Each page is separate bundle
+   - Dynamic imports for heavy components (editor)
+   - Lazy loading reduces initial bundle
+
+================================================================================
+DEBUGGING & TROUBLESHOOTING
+--------------------------------------------------------------------------------
+
+Q86: How would you debug a real-time update not showing?
+A: - Check Convex dashboard for query subscriptions
+   - Verify useQuery is used (not useMutation)
+   - Check if filter conditions are correct
+   - Ensure userId matches
+   - Look for console errors
+
+Q87: How do you handle errors in file uploads?
+A: - Try-catch around edgestore.upload()
+   - Toast notification on failure
+   - Show error message to user
+   - Don't save URL if upload fails
+   - Retry mechanism
+
+Q88: What if a user's document doesn't load?
+A: - Check authentication status
+   - Verify document exists (getById returns null)
+   - Check userId matches document owner
+   - Ensure not archived (if on main route)
+   - Check Convex dashboard for errors
+
+================================================================================
+EDGE CASES & ERROR HANDLING
+--------------------------------------------------------------------------------
+
+Q89: What happens if user deletes a document they're currently viewing?
+A: - Mutation succeeds
+   - useQuery returns null
+   - Component handles null case
+   - Should redirect to /documents (depends on implementation)
+
+Q90: How do you handle network failures?
+A: - Convex retries automatically
+   - Shows loading states
+   - Toast notifications for errors
+   - Offline state could be detected
+
+Q91: What if two users archive the same document simultaneously?
+A: - Both mutations processed
+   - First one succeeds
+   - Second one also succeeds (already archived)
+   - Idempotent operation
+   - No conflict
+
+================================================================================
+BEST PRACTICES & CODE QUALITY
+--------------------------------------------------------------------------------
+
+Q92: What coding standards do you follow?
+A: - Consistent file naming (kebab-case for files)
+   - Component names match file names
+   - "use client" at top when needed
+   - PropTypes or TypeScript for type checking
+   - ESLint for code quality
+
+Q93: How do you organize component files?
+A: - One component per file
+   - Related components in same folder
+   - Separate _components for private components
+   - Utility functions in lib folder
+   - Hooks in hooks folder
+
+Q94: Explain the "use client" directive.
+A: - Marks component as Client Component
+   - Needed for hooks, interactivity
+   - Must be at top of file
+   - Children are also client components
+   - Server Components by default in App Router
+
+Q95: How do you handle environment variables?
+A: - .env.local for local development
+   - NEXT_PUBLIC_ prefix for client-side vars
+   - Server-only vars without prefix
+   - Never commit to git (.gitignore)
+   - Vercel dashboard for production
+
+================================================================================
+COLLABORATION & TEAM WORK
+--------------------------------------------------------------------------------
+
+Q96: How would you onboard a new developer?
+A: - README with setup instructions
+   - Explain architecture overview
+   - Point to key files (schema, mutations)
+   - Run through feature development workflow
+   - Pair programming session
+
+Q97: How do you handle code reviews?
+A: - Check for security issues
+   - Verify type safety
+   - Test functionality locally
+   - Review performance implications
+   - Ensure consistent styling
+
+Q98: What documentation would you add?
+A: - API documentation for mutations/queries
+   - Component usage examples
+   - Architecture diagrams
+   - Deployment guide
+   - Troubleshooting guide
+
+================================================================================
+SYSTEM DESIGN QUESTIONS
+--------------------------------------------------------------------------------
+
+Q99: How would you handle millions of documents?
+A: - Database sharding (Convex handles this)
+   - Pagination for lists
+   - Search indexing (Algolia or similar)
+   - Archive old documents
+   - CDN for static assets
+
+Q100: Design a real-time collaboration feature.
+A: - Add presence tracking (who's online)
+   - Operational Transformation for concurrent edits
+   - Show live cursors and selections
+   - Conflict resolution algorithm
+   - Websocket connections (Convex provides)
+
+Q101: How would you implement document versioning?
+A: - New table: documentVersions
+   - Store content snapshots on save
+   - Keep last N versions or time-based
+   - Restore to previous version
+   - Show diff between versions
+
+Q102: Design a permission system for team workspaces.
+A: - Add workspaces table
+   - User roles (owner, editor, viewer)
+   - Document permissions (read, write)
+   - Invite system with tokens
+   - Check permissions in every mutation
+
+================================================================================
+                     KEY TAKEAWAYS FOR INTERVIEWS
+================================================================================
+
+1. ARCHITECTURE:
+   - Serverless, full-stack application using modern BaaS platforms
+   - Real-time updates without manual WebSocket management
+   - Type-safe end-to-end with TypeScript
+   - Separation of concerns (Frontend/Backend/Auth/Storage)
+
+2. SCALABILITY:
+   - Auto-scaling backend (Convex)
+   - CDN for assets (EdgeStore)
+   - Edge deployment (Vercel)
+   - No single point of failure
+
+3. DEVELOPER EXPERIENCE:
+   - Type generation from schema
+   - Real-time subscriptions with simple API
+   - No backend server management
+   - Hot reload and fast development cycle
+
+4. USER EXPERIENCE:
+   - Instant updates across all clients
+   - Rich text editing with image support
+   - Nested document organization
+   - Publish to web capability
+   - Keyboard shortcuts for power users
+
+5. SECURITY:
+   - Authentication and authorization on every operation
+   - User data isolation
+   - Environment variable management
+   - JWT token validation
+
+6. PERFORMANCE:
+   - Server Components for reduced JS
+   - Database indexing for fast queries
+   - CDN for global content delivery
+   - Lazy loading and code splitting
+
+================================================================================
+                       COMMON PITFALLS AVOIDED
+================================================================================
+
+1. No manual WebSocket management (Convex handles it)
+2. No N+1 query problems (proper indexing)
+3. No authentication bugs (Clerk handles security)
+4. No state management complexity (Zustand for modals, Convex for data)
+5. No bundle size issues (Server Components + code splitting)
+6. No race conditions in real-time updates (Convex handles consistency)
+7. No hydration mismatches (isMounted pattern, suppressHydrationWarning)
+8. No prop drilling (Zustand for global state)
+9. No memory leaks (proper cleanup in useEffect)
+10. No accessibility issues (Radix UI components)
+
+================================================================================
+                    BEHAVIORAL INTERVIEW QUESTIONS
+================================================================================
+
+Q103: Tell me about this project. Why did you build it?
+A: I built One Notebook to learn modern full-stack development with Next.js 14
+   and real-time features. I wanted to understand how applications like Notion
+   work under the hood. The project taught me about serverless architecture,
+   real-time databases, and building production-ready applications. I chose
+   technologies that represent industry best practices and solve real problems.
+
+Q104: What was the most challenging part of this project?
+A: The most challenging part was implementing the recursive document hierarchy
+   while maintaining performance and data integrity. I had to carefully design
+   the database schema with proper indexes, handle recursive queries efficiently,
+   and ensure that operations like archive/restore work correctly on entire
+   document trees. I learned a lot about data modeling and optimization.
+
+Q105: How did you handle a bug that was difficult to solve?
+A: When implementing the real-time updates, I encountered an issue where deleted
+   documents would sometimes still appear in the sidebar. I debugged by checking
+   the Convex queries, adding console logs, and realized I wasn't filtering by
+   isArchived correctly. This taught me to always verify filter conditions and
+   use TypeScript to catch type errors early.
+
+Q106: What would you do differently if you rebuilt this?
+A: - Add comprehensive testing (unit, integration, E2E)
+   - Implement CI/CD pipeline from the start
+   - Add more detailed error logging and monitoring
+   - Consider document versioning from the beginning
+   - Add analytics to understand user behavior
+   - Implement rate limiting for mutations
+
+Q107: How do you stay updated with new technologies?
+A: - Follow tech blogs and newsletters (Next.js, React)
+   - Watch conference talks and tutorials
+   - Read documentation thoroughly
+   - Build side projects to experiment
+   - Participate in developer communities
+   - Code reviews and learning from peers
+
+Q108: Explain a time you had to learn a new technology quickly.
+A: For this project, I had never used Convex before. I spent the first day reading
+   documentation, watching tutorials, and building a simple CRUD app. Then I
+   incrementally added features, learning authentication, real-time subscriptions,
+   and schema design. By breaking it into small steps and referring to docs
+   frequently, I became proficient within a week.
+
+================================================================================
+                      QUESTIONS TO ASK INTERVIEWER
+================================================================================
+
+TECHNICAL QUESTIONS:
+1. What is your tech stack and why did you choose it?
+2. How do you handle real-time features and websockets?
+3. What's your approach to database design and optimization?
+4. How do you manage state in large React applications?
+5. What deployment and CI/CD tools do you use?
+6. How do you handle database migrations in production?
+7. What monitoring and observability tools are in place?
+8. How do you ensure code quality (linting, testing, reviews)?
+
+TEAM & PROCESS QUESTIONS:
+9. What does a typical development workflow look like?
+10. How do you handle code reviews and feedback?
+11. What's your approach to technical debt?
+12. How do you prioritize features vs bug fixes?
+13. What's the team structure (frontend/backend/full-stack)?
+14. How do you onboard new engineers?
+15. What opportunities are there for learning and growth?
+
+PRODUCT & BUSINESS QUESTIONS:
+16. What are the biggest technical challenges right now?
+17. How do you balance feature velocity with quality?
+18. What's the product roadmap for the next 6-12 months?
+19. How do you gather and incorporate user feedback?
+20. What metrics do you track for success?
+
+================================================================================
+                        PROJECT DEMO TALKING POINTS
+================================================================================
+
+OPENING (30 seconds):
+"One Notebook is a full-stack document management application inspired by Notion.
+It allows users to create, organize, and publish documents with infinite nesting,
+real-time updates, and rich media support. I built it using Next.js 14, Convex
+for the backend, and Clerk for authentication."
+
+KEY FEATURES TO DEMONSTRATE (3-4 minutes):
+
+1. AUTHENTICATION:
+   - "Let's start by signing in with Clerk authentication"
+   - "Notice the smooth OAuth integration"
+
+2. DOCUMENT CREATION:
+   - "I can create a new document instantly"
+   - "Watch how the sidebar updates in real-time without a page refresh"
+
+3. NESTED HIERARCHY:
+   - "Documents can be nested infinitely"
+   - "This tree structure is stored efficiently with indexed queries"
+
+4. RICH TEXT EDITING:
+   - "The BlockNote editor supports rich formatting"
+   - "I can drag and drop images which are uploaded to EdgeStore CDN"
+
+5. REAL-TIME UPDATES:
+   - "If I open this in another tab, both update simultaneously"
+   - "This is powered by Convex's real-time subscriptions"
+
+6. SOFT DELETE:
+   - "Archiving a document moves it to trash"
+   - "Notice all child documents are archived recursively"
+   - "I can restore from trash at any time"
+
+7. PUBLISH FEATURE:
+   - "I can publish this document to get a public URL"
+   - "Anyone with the link can view it without authentication"
+
+8. THEME & UX:
+   - "The app supports dark and light modes"
+   - "Keyboard shortcut Cmd+K opens quick search"
+   - "Fully responsive and works on mobile"
+
+TECHNICAL HIGHLIGHTS (1-2 minutes):
+- "The app uses Next.js 14 App Router with Server Components for optimal performance"
+- "Convex provides real-time database with TypeScript type safety"
+- "All user data is isolated and secured with proper authentication checks"
+- "The architecture is fully serverless and scales automatically"
+
+CLOSING:
+"I'm happy to dive deeper into any aspect - the database schema, real-time
+implementation, authentication flow, or any other technical details you'd
+like to discuss."
+
+================================================================================
+                         COMMON FOLLOW-UP QUESTIONS
+================================================================================
+
+Q109: How long did this project take to build?
+A: Approximately 2-3 weeks of focused development. The first few days were spent
+   learning Convex and planning the architecture. Then I iteratively built
+   features, starting with basic CRUD, then adding authentication, real-time
+   updates, and advanced features like nested documents and publish functionality.
+
+Q110: Did you work on this alone or with a team?
+A: This was a solo project to learn modern full-stack development. However, I
+   followed industry best practices like Git commits, code organization, and
+   documentation as if I were on a team. I'm comfortable with both solo and
+   collaborative development.
+
+Q111: How do you ensure your code is maintainable?
+A: - Consistent file and folder structure
+   - TypeScript for type safety
+   - Descriptive variable and function names
+   - Separation of concerns (components, hooks, utilities)
+   - Comments for complex logic
+   - Reusable components and hooks
+
+Q112: What's the most interesting technical decision you made?
+A: Choosing Convex over traditional REST APIs or GraphQL. It simplified the
+   architecture significantly by handling real-time updates, type generation,
+   and serverless scaling automatically. This let me focus on features rather
+   than infrastructure. The tradeoff is vendor lock-in, but for rapid
+   development, it was the right choice.
+
+Q113: How would you monetize this application?
+A: - Freemium model: Free tier with limited documents
+   - Pro plan: Unlimited documents, version history, team features
+   - Enterprise: SSO, advanced permissions, priority support
+   - Usage-based: Storage and API calls
+   - Marketplace: Templates and integrations
+
+Q114: What metrics would you track?
+A: - User acquisition and retention
+   - Daily/Monthly active users
+   - Documents created per user
+   - Feature usage (publish, search, etc.)
+   - Performance metrics (page load, query time)
+   - Error rates and types
+   - Conversion from free to paid
+
+================================================================================
+                       ADVANCED SYSTEM DESIGN SCENARIOS
+================================================================================
+
+SCENARIO 1: SCALE TO 1 MILLION USERS
+- Database sharding by userId
+- Read replicas for queries
+- Cache frequently accessed documents
+- Rate limiting per user
+- CDN for all static assets
+- Async processing for heavy operations
+- Queue system for background jobs
+
+SCENARIO 2: REAL-TIME COLLABORATION
+- Operational Transformation (OT) or CRDTs
+- Presence awareness (online users)
+- Cursor and selection sharing
+- Conflict resolution algorithm
+- Optimistic updates with rollback
+- Document locking mechanism
+- Change history and attribution
+
+SCENARIO 3: OFFLINE SUPPORT
+- Service Workers for offline detection
+- IndexedDB for local storage
+- Sync queue for pending changes
+- Conflict resolution on reconnect
+- Progressive Web App (PWA)
+- Background sync API
+
+SCENARIO 4: COMPLIANCE & SECURITY
+- Data encryption at rest and in transit
+- GDPR compliance (right to deletion)
+- Audit logs for all actions
+- IP whitelisting for enterprises
+- Two-factor authentication
+- Session management and timeouts
+- Security headers (CSP, HSTS)
+
+SCENARIO 5: GLOBAL DEPLOYMENT
+- Multi-region database replicas
+- Edge functions in multiple regions
+- CDN with global distribution
+- Latency monitoring per region
+- Failover and disaster recovery
+- Data residency compliance
+
+================================================================================
+                          TROUBLESHOOTING GUIDE
+================================================================================
+
+ISSUE: Real-time updates not working
+FIX: - Verify useQuery is used (not just mutation)
+     - Check Convex connection in dashboard
+     - Ensure filter conditions are correct
+     - Check browser console for errors
+
+ISSUE: Authentication fails
+FIX: - Verify environment variables are set
+     - Check Clerk dashboard for API keys
+     - Ensure NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is correct
+     - Clear cookies and try again
+
+ISSUE: Images not uploading
+FIX: - Check EdgeStore API keys
+     - Verify file size limits
+     - Check network tab for failed requests
+     - Ensure edgestore context is provided
+
+ISSUE: Slow query performance
+FIX: - Check if proper indexes exist
+     - Verify query is using indexes
+     - Look at Convex dashboard metrics
+     - Consider pagination for large datasets
+
+ISSUE: Build errors
+FIX: - Run npm install to ensure dependencies
+     - Check TypeScript errors
+     - Verify environment variables in .env.local
+     - Clear .next folder and rebuild
+
+================================================================================
+                              FINAL TIPS
+================================================================================
+
+BEFORE THE INTERVIEW:
+✓ Run the app locally and test all features
+✓ Review the codebase and remember key decisions
+✓ Practice explaining architecture in simple terms
+✓ Prepare 2-3 challenging scenarios you solved
+✓ Have metrics ready (lines of code, features, timeline)
+✓ Review the technologies and their alternatives
+✓ Prepare questions about the company's tech stack
+
+DURING THE DEMO:
+✓ Start with overview, then dive into specifics
+✓ Show, don't just tell
+✓ Highlight technical challenges and solutions
+✓ Be ready to show code for any feature
+✓ Keep demo under 10 minutes unless asked for more
+✓ Leave time for questions
+
+WHEN ANSWERING QUESTIONS:
+✓ Be honest if you don't know something
+✓ Explain your thought process
+✓ Relate answers to real project experiences
+✓ Show willingness to learn
+✓ Ask clarifying questions if needed
+✓ Use specific examples from your code
+
+RED FLAGS TO AVOID:
+✗ "I just copied from a tutorial"
+✗ "I don't know how that works"
+✗ "I didn't write tests because..."
+✗ "Security isn't important for this"
+✗ "I didn't think about scalability"
+
+CONFIDENCE BOOSTERS:
+✓ You built a production-ready full-stack app
+✓ You learned multiple new technologies
+✓ You implemented complex features (real-time, nesting)
+✓ You made thoughtful technical decisions
+✓ You followed modern best practices
+✓ You can explain every line of code
+
+================================================================================
+                    SALARY NEGOTIATION PREPARATION
+================================================================================
+
+YOUR VALUE PROPOSITION:
+- Full-stack capabilities (Frontend + Backend + Database)
+- Modern tech stack experience (Next.js, React, TypeScript)
+- Real-time application development
+- Serverless architecture knowledge
+- Authentication and security implementation
+- Database design and optimization
+- UI/UX best practices
+- Problem-solving and self-learning ability
+
+WHEN ASKED ABOUT EXPECTATIONS:
+"Based on my research for [position] roles in [location] with my skill set,
+I'm targeting [X-Y range]. However, I'm more interested in finding the right
+fit and opportunities for growth. What's the budget range for this position?"
+
+================================================================================
+                              CONCLUSION
+================================================================================
+
+This document covers 114+ interview questions across:
+- Architecture & Design
+- Authentication & Authorization  
+- Database & Real-time Updates
+- Frontend Architecture
+- File Management
+- State Management
+- Performance Optimization
+- Error Handling
+- Deployment & Scalability
+- Security
+- Testing
+- React & Hooks
+- UI/UX Patterns
+- TypeScript
+- Styling
+- Debugging
+- Best Practices
+- System Design
+- Behavioral Questions
+
+You are now prepared to confidently discuss every aspect of your One Notebook
+project. Remember: You built something impressive. Own it, explain it well,
+and show your passion for learning and building great software.
+
+GOOD LUCK WITH YOUR INTERVIEWS! 🚀
+
+================================================================================
+                                  END
+================================================================================
